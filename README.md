@@ -23,7 +23,7 @@ pip install git+ssh://git@github.com/kmedian/keras-layernorm-rnn.git
 
 
 ## Usage
-Check the [examples](http://github.com/kmedian/keras-layernorm-rnn/examples) folder for notebooks.
+Check the [examples](https://github.com/kmedian/keras-layernorm-rnn/blob/master/examples/How%20to%20use%20LayernormSimpleRNN.ipynb) folder for notebooks.
 
 
 ## Commands
