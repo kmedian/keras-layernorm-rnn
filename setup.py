@@ -7,7 +7,7 @@ def read(fname):
 
 
 setup(name='keras-layernorm-rnn',
-      version='0.1.1',
+      version='0.1.3',
       description='RNNs with layer normalization',
       long_description=read('README.md'),
       long_description_content_type='text/markdown',
@@ -20,5 +20,5 @@ setup(name='keras-layernorm-rnn',
           'setuptools>=40.0.0',
           'tensorflow==2.1.0',
           'numpy>=1.18.0'],
-      python_requires='>=3.7',
+      python_requires='>=3.6',
       zip_safe=False)
