@@ -78,15 +78,15 @@ class LayernormSimpleRNNCell(keras.layers.SimpleRNNCell,
     ```python
     import numpy as np
     import tensorflow.keras as keras
-    import tensorflow_addons as tfa
+    from keras_layernorm_rnn import LayernormSimpleRNN
 
     inputs = np.random.random([32, 10, 8]).astype(np.float32)
-    rnn = keras.layers.RNN(tfa.rnn.LayernormSimpleRNNCell(4))
+    rnn = keras.layers.RNN(LayernormSimpleRNNCell(4))
 
     output = rnn(inputs)  # The output has shape `[32, 4]`.
 
     rnn = keras.layers.RNN(
-        tfa.rnn.LayernormSimpleRNNCell(4),
+        LayernormSimpleRNNCell(4),
         return_sequences=True,
         return_state=True)
 
@@ -345,14 +345,14 @@ class LayernormSimpleRNN(keras.layers.SimpleRNN):
 
     ```python
     import numpy as np
-    import tensorflow_addons as tfa
+    from keras_layernorm_rnn import LayernormSimpleRNN
 
     inputs = np.random.random([32, 10, 8]).astype(np.float32)
-    model = tfa.rnn.LayernormSimpleRNN(4)
+    model = LayernormSimpleRNN(4)
 
     output = model(inputs)  # The output has shape `[32, 4]`.
 
-    model = tfa.rnn.LayernormSimpleRNN(
+    model = LayernormSimpleRNN(
         4, return_sequences=True, return_state=True)
 
     # whole_sequence_output has shape `[32, 10, 4]`.
