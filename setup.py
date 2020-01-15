@@ -15,7 +15,7 @@ setup(name='keras-layernorm-rnn',
       author='Ulf Hamster',
       author_email='554c46@gmail.com',
       license='MIT',
-      packages=['keras-layernorm-rnn'],
+      packages=['keras_layernorm_rnn'],
       install_requires=[
           'setuptools>=40.0.0',
           'tensorflow==2.1.0',
