@@ -1,1 +1,2 @@
 from .layernorm_simplernn import LayernormSimpleRNNCell, LayernormSimpleRNN
+from .layernorm_lstm2 import LayernormLSTM2Cell, LayernormLSTM2
