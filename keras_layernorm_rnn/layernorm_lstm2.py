@@ -132,9 +132,9 @@ class LayernormLSTM2Cell(keras.layers.LSTMCell):
             bias_i, bias_f, bias_c, bias_o = tf.split(
                 self.bias, num_or_size_splits=4, axis=0)
             net_i = keras.backend.bias_add(net_i, bias_i)
-            net_f = keras.backend.bias_add(net_i, bias_f)
-            net_c = keras.backend.bias_add(net_i, bias_c)
-            net_o = keras.backend.bias_add(net_i, bias_o)
+            net_f = keras.backend.bias_add(net_f, bias_f)
+            net_c = keras.backend.bias_add(net_c, bias_c)
+            net_o = keras.backend.bias_add(net_o, bias_o)
 
         # _compute_carry_and_output_fused
         i = self.recurrent_activation(net_i)
