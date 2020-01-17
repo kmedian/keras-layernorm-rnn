@@ -70,7 +70,6 @@ class LayernormLSTM3Cell(keras.layers.LSTMCell):
         self.gamma_regularizer = keras.regularizers.get(gamma_regularizer)
         self.gamma_constraint = keras.constraints.get(gamma_constraint)
 
-
     def build(self, input_shape):
         # get sizes
         input_dim = input_shape[-1]
@@ -108,10 +107,14 @@ class LayernormLSTM3Cell(keras.layers.LSTMCell):
                     'regularizer': self.bias_regularizer,
                     'constraint': self.bias_constraint
                 }
-                self.b_i = self.add_weight(**b_config, initializer=self.bias_initializer, name="b_i")
-                self.b_f = self.add_weight(**b_config, initializer='ones', name="b_f")
-                self.b_c = self.add_weight(**b_config, initializer=self.bias_initializer, name="b_c")
-                self.b_o = self.add_weight(**b_config, initializer=self.bias_initializer, name="b_o")
+                self.b_i = self.add_weight(
+                    **b_config, initializer=self.bias_initializer, name="b_i")
+                self.b_f = self.add_weight(
+                    **b_config, initializer='ones', name="b_f")
+                self.b_c = self.add_weight(
+                    **b_config, initializer=self.bias_initializer, name="b_c")
+                self.b_o = self.add_weight(
+                    **b_config, initializer=self.bias_initializer, name="b_o")
             else:
                 b_config = {
                     'shape': (self.units, ),
@@ -144,12 +147,12 @@ class LayernormLSTM3Cell(keras.layers.LSTMCell):
             self.layernorm_f = keras.layers.LayerNormalization(**ln_config)
             self.layernorm_c = keras.layers.LayerNormalization(**ln_config)
             self.layernorm_o = keras.layers.LayerNormalization(**ln_config)
-    
+
     def call(self, inputs, states, training=None):
         # read results from previous time step
         h_tm1 = states[0]  # previous memory state
         c_tm1 = states[1]  # previous carry state
-        
+
         # IMPLEMENTATION 1
         # - Fewer small operations instead of few big operations
 
@@ -166,8 +169,8 @@ class LayernormLSTM3Cell(keras.layers.LSTMCell):
         else:
             inputs_i, inputs_f, inputs_c, inputs_o = (
                 inputs, inputs, inputs, inputs)
-        
-        # multiply inputs with weight matrix 
+
+        # multiply inputs with weight matrix
         net_i = keras.backend.dot(inputs_i, self.W_i)
         net_f = keras.backend.dot(inputs_f, self.W_f)
         net_c = keras.backend.dot(inputs_c, self.W_c)
@@ -218,7 +221,6 @@ class LayernormLSTM3Cell(keras.layers.LSTMCell):
         # return memory state h, and carry state c
         return h, [h, c]
 
-
     def get_config(self):
         config = {
             'use_layernorm': self.use_layernorm,
@@ -232,7 +234,6 @@ class LayernormLSTM3Cell(keras.layers.LSTMCell):
         del cell_config['name']
 
         return {**config, **cell_config}
-
 
 
 class LayernormLSTM3(keras.layers.LSTM):

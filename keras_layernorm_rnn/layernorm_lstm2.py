@@ -70,7 +70,6 @@ class LayernormLSTM2Cell(keras.layers.LSTMCell):
         self.gamma_regularizer = keras.regularizers.get(gamma_regularizer)
         self.gamma_constraint = keras.constraints.get(gamma_constraint)
 
-
     def build(self, input_shape):
         # build input kernel, recurrent kernel and bias in LSTMCell
         keras.layers.LSTMCell.build(self, input_shape)
@@ -95,12 +94,12 @@ class LayernormLSTM2Cell(keras.layers.LSTMCell):
             self.layernorm_f = keras.layers.LayerNormalization(**ln_config)
             self.layernorm_c = keras.layers.LayerNormalization(**ln_config)
             self.layernorm_o = keras.layers.LayerNormalization(**ln_config)
-    
+
     def call(self, inputs, states, training=None):
         # read results from previous time step
         h_tm1 = states[0]  # previous memory state
         c_tm1 = states[1]  # previous carry state
-        
+
         # IMPLEMENTATION 2
         # - One big operations instead of 4 smaller operations
         # - no droput for recurrent kernel
@@ -113,7 +112,7 @@ class LayernormLSTM2Cell(keras.layers.LSTMCell):
                     inputs, training)
                 # apply dropout
                 inputs = inputs * dp_mask
-        
+
         # compute all network connections
         net = keras.backend.dot(inputs, self.kernel)
         net += keras.backend.dot(h_tm1, self.recurrent_kernel)
@@ -150,7 +149,6 @@ class LayernormLSTM2Cell(keras.layers.LSTMCell):
         # return memory state h, and carry state c
         return h, [h, c]
 
-
     def get_config(self):
         config = {
             'use_layernorm': self.use_layernorm,
@@ -164,7 +162,6 @@ class LayernormLSTM2Cell(keras.layers.LSTMCell):
         del cell_config['name']
 
         return {**config, **cell_config}
-
 
 
 class LayernormLSTM2(keras.layers.LSTM):

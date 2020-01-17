@@ -25,6 +25,16 @@ pip install git+ssh://git@github.com/kmedian/keras-layernorm-rnn.git
 Check the [examples](https://github.com/kmedian/keras-layernorm-rnn/blob/master/examples/How%20to%20use%20LayernormSimpleRNN.ipynb) folder for notebooks.
 
 
+```
+import tensorflow as tf
+from keras_layernorm_rnn import LayernormLSTM3
+
+model = tf.keras.Sequential([
+    LayernormLSTM3(units=8, return_sequences=False),  # Many-to-One
+    tf.keras.layers.Dense(1, activation='linear')
+])
+```
+
 ## Commands
 Install a virtual environment
 

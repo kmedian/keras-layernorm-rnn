@@ -70,7 +70,6 @@ class LayernormLSTM1Cell(keras.layers.LSTMCell):
         self.gamma_regularizer = keras.regularizers.get(gamma_regularizer)
         self.gamma_constraint = keras.constraints.get(gamma_constraint)
 
-
     def build(self, input_shape):
         # build input kernel, recurrent kernel and bias in LSTMCell
         keras.layers.LSTMCell.build(self, input_shape)
@@ -95,12 +94,12 @@ class LayernormLSTM1Cell(keras.layers.LSTMCell):
             self.layernorm_f = keras.layers.LayerNormalization(**ln_config)
             self.layernorm_c = keras.layers.LayerNormalization(**ln_config)
             self.layernorm_o = keras.layers.LayerNormalization(**ln_config)
-    
+
     def call(self, inputs, states, training=None):
         # read results from previous time step
         h_tm1 = states[0]  # previous memory state
         c_tm1 = states[1]  # previous carry state
-        
+
         # IMPLEMENTATION 1
         # - Fewer small operations instead of few big operations
 
@@ -117,8 +116,8 @@ class LayernormLSTM1Cell(keras.layers.LSTMCell):
         else:
             inputs_i, inputs_f, inputs_c, inputs_o = (
                 inputs, inputs, inputs, inputs)
-        
-        # multiply inputs with weight matrix 
+
+        # multiply inputs with weight matrix
         W_i, W_f, W_c, W_o = tf.split(
             self.kernel, num_or_size_splits=4, axis=1)
         net_i = keras.backend.dot(inputs_i, W_i)
@@ -175,7 +174,6 @@ class LayernormLSTM1Cell(keras.layers.LSTMCell):
         # return memory state h, and carry state c
         return h, [h, c]
 
-
     def get_config(self):
         config = {
             'use_layernorm': self.use_layernorm,
@@ -189,7 +187,6 @@ class LayernormLSTM1Cell(keras.layers.LSTMCell):
         del cell_config['name']
 
         return {**config, **cell_config}
-
 
 
 class LayernormLSTM1(keras.layers.LSTM):
