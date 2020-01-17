@@ -1,4 +1,3 @@
-[![Build Status](https://travis-ci.org/kmedian/keras-layernorm-rnn.svg?branch=master)](https://travis-ci.org/kmedian/keras-layernorm-rnn)
 [![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/kmedian/keras-layernorm-rnn/master?urlpath=lab)
 [![Gitpod - Code Now](https://img.shields.io/badge/Gitpod-code%20now-blue.svg?longCache=true)](https://gitpod.io#https://github.com/kmedian/keras-layernorm-rnn)
 
@@ -34,7 +33,6 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip3 install --upgrade pip
 pip3 install -r requirements.txt
-pip3 install jupyterlab
 ```
 
 (If your git repo is stored in a folder with whitespaces, then don't use the subfolder `.venv`. Use an absolute path without whitespaces.)

@@ -389,7 +389,7 @@ class LayernormSimpleRNN(keras.layers.SimpleRNN):
             stateful=False,
             unroll=False,
             **kwargs):
-        # 'implementation' warning was never relevant for LayernormSimpleRNN
+        # instantiate the RNN cell
         cell = LayernormSimpleRNNCell(
             units,
             activation=activation,
@@ -413,6 +413,7 @@ class LayernormSimpleRNN(keras.layers.SimpleRNN):
             recurrent_dropout=recurrent_dropout,
             dtype=kwargs.get('dtype'),
             trainable=kwargs.get('trainable', True))
+        # call the parent class 'RNN'
         keras.layers.RNN.__init__(
             self,
             cell,
@@ -422,9 +423,10 @@ class LayernormSimpleRNN(keras.layers.SimpleRNN):
             stateful=stateful,
             unroll=unroll,
             **kwargs)
+        # set other parameters
         self.activity_regularizer = keras.regularizers.get(
             activity_regularizer)
-        # self.input_spec = [InputSpec(ndim=3)]
+        self.input_spec = [keras.layers.InputSpec(ndim=3)]
 
     # use SimpleRNN's call() method
 
