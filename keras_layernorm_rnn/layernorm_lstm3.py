@@ -2,12 +2,12 @@ import tensorflow as tf
 import tensorflow.keras as keras
 
 
-class LayernormLSTM2Cell(keras.layers.LSTMCell):
-    """LSTM with Layer Normalization (2: fewer large multiplications)
+class LayernormLSTM3Cell(keras.layers.LSTMCell):
+    """LSTM with Layer Normalization
 
     Notice:
-        LayernormLSTM2Cell(use_layernorm=False) is the same
-        as LSTMCell(implementation=2)
+        LayernormLSTM3Cell(use_layernorm=False) is the same
+        as LSTMCell(implementation=1)
 
     References:
     [1] Hochreiter, S., Schmidhuber, J., 1997. Long short-term memory.
@@ -72,8 +72,57 @@ class LayernormLSTM2Cell(keras.layers.LSTMCell):
 
 
     def build(self, input_shape):
-        # build input kernel, recurrent kernel and bias in LSTMCell
-        keras.layers.LSTMCell.build(self, input_shape)
+        # get sizes
+        input_dim = input_shape[-1]
+
+        # Input weight matrices W_i, W_f, W_c, W_o
+        w_config = {
+            'shape': (input_dim, self.units),
+            'initializer': self.kernel_initializer,
+            'regularizer': self.kernel_regularizer,
+            'constraint': self.kernel_constraint
+        }
+        self.W_i = self.add_weight(**w_config, name="W_i")
+        self.W_f = self.add_weight(**w_config, name="W_f")
+        self.W_c = self.add_weight(**w_config, name="W_c")
+        self.W_o = self.add_weight(**w_config, name="W_o")
+
+        # Recurrent weight matrices R_i, R_f, R_c, R_o
+        r_config = {
+            'shape': (self.units, self.units),
+            'initializer': self.recurrent_initializer,
+            'regularizer': self.recurrent_regularizer,
+            'constraint': self.recurrent_constraint
+        }
+        self.R_i = self.add_weight(**r_config, name="R_i")
+        self.R_f = self.add_weight(**r_config, name="R_f")
+        self.R_c = self.add_weight(**r_config, name="R_c")
+        self.R_o = self.add_weight(**r_config, name="R_o")
+
+        # Bias
+        if self.use_bias:
+            # Change defaults
+            if self.unit_forget_bias:
+                b_config = {
+                    'shape': (self.units, ),
+                    'regularizer': self.bias_regularizer,
+                    'constraint': self.bias_constraint
+                }
+                self.b_i = self.add_weight(**b_config, initializer=self.bias_initializer, name="b_i")
+                self.b_f = self.add_weight(**b_config, initializer='ones', name="b_f")
+                self.b_c = self.add_weight(**b_config, initializer=self.bias_initializer, name="b_c")
+                self.b_o = self.add_weight(**b_config, initializer=self.bias_initializer, name="b_o")
+            else:
+                b_config = {
+                    'shape': (self.units, ),
+                    'initializer': self.bias_initializer,
+                    'regularizer': self.bias_regularizer,
+                    'constraint': self.bias_constraint
+                }
+                self.b_i = self.add_weight(**b_config, name="b_i")
+                self.b_f = self.add_weight(**b_config, name="b_f")
+                self.b_c = self.add_weight(**b_config, name="b_c")
+                self.b_o = self.add_weight(**b_config, name="b_o")
 
         # build the layernorm objects
         if self.use_layernorm:
@@ -101,26 +150,47 @@ class LayernormLSTM2Cell(keras.layers.LSTMCell):
         h_tm1 = states[0]  # previous memory state
         c_tm1 = states[1]  # previous carry state
         
-        # IMPLEMENTATION 2
-        # - One big operations instead of 4 smaller operations
-        # - no droput for recurrent kernel
+        # IMPLEMENTATION 1
+        # - Fewer small operations instead of few big operations
 
         # dropout, input kernel
-        if training:
-            if 0. < self.dropout < 1.:
-                # generate dropout mask from DropoutRNNCellMixin
-                dp_mask = self.get_dropout_mask_for_cell(
-                    inputs, training)
-                # apply dropout
-                inputs = inputs * dp_mask
+        if (training is not None) and (0. < self.dropout < 1.):
+            # generate 4x dropout masks from DropoutRNNCellMixin
+            dp_mask = self.get_dropout_mask_for_cell(
+                inputs, training, count=4)
+            # apply dropouts
+            inputs_i = inputs * dp_mask[0]
+            inputs_f = inputs * dp_mask[1]
+            inputs_c = inputs * dp_mask[2]
+            inputs_o = inputs * dp_mask[3]
+        else:
+            inputs_i, inputs_f, inputs_c, inputs_o = (
+                inputs, inputs, inputs, inputs)
         
-        # compute all network connections
-        net = keras.backend.dot(inputs, self.kernel)
-        net += keras.backend.dot(h_tm1, self.recurrent_kernel)
+        # multiply inputs with weight matrix 
+        net_i = keras.backend.dot(inputs_i, self.W_i)
+        net_f = keras.backend.dot(inputs_f, self.W_f)
+        net_c = keras.backend.dot(inputs_c, self.W_c)
+        net_o = keras.backend.dot(inputs_o, self.W_o)
 
-        # split net into the 4 vectors
-        net_i, net_f, net_c, net_o = tf.split(
-            net, num_or_size_splits=4, axis=1)
+        # dropout, recurrent kernel
+        if (training is not None) and (0. < self.recurrent_dropout < 1.):
+            # generate 4x dropout masks from DropoutRNNCellMixin
+            rec_dp_mask = self.get_recurrent_dropout_mask_for_cell(
+                h_tm1, training, count=4)
+            # apply dropouts
+            h_tm1_i = h_tm1 * rec_dp_mask[0]
+            h_tm1_f = h_tm1 * rec_dp_mask[1]
+            h_tm1_c = h_tm1 * rec_dp_mask[2]
+            h_tm1_o = h_tm1 * rec_dp_mask[3]
+        else:
+            h_tm1_i, h_tm1_f, h_tm1_c, h_tm1_o = h_tm1, h_tm1, h_tm1, h_tm1
+
+        # multiply previous hidden with recurrent weights
+        net_i += keras.backend.dot(h_tm1_i, self.R_i)
+        net_f += keras.backend.dot(h_tm1_f, self.R_f)
+        net_c += keras.backend.dot(h_tm1_c, self.R_c)
+        net_o += keras.backend.dot(h_tm1_o, self.R_o)
 
         # apply scaling of layer normalization to each gate
         if self.use_layernorm:
@@ -131,12 +201,10 @@ class LayernormLSTM2Cell(keras.layers.LSTMCell):
 
         # apply bias
         if self.use_bias:
-            bias_i, bias_f, bias_c, bias_o = tf.split(
-                self.bias, num_or_size_splits=4, axis=0)
-            net_i = keras.backend.bias_add(net_i, bias_i)
-            net_f = keras.backend.bias_add(net_f, bias_f)
-            net_c = keras.backend.bias_add(net_c, bias_c)
-            net_o = keras.backend.bias_add(net_o, bias_o)
+            net_i = keras.backend.bias_add(net_i, self.b_i)
+            net_f = keras.backend.bias_add(net_f, self.b_f)
+            net_c = keras.backend.bias_add(net_c, self.b_c)
+            net_o = keras.backend.bias_add(net_o, self.b_o)
 
         # _compute_carry_and_output_fused
         i = self.recurrent_activation(net_i)
@@ -167,7 +235,7 @@ class LayernormLSTM2Cell(keras.layers.LSTMCell):
 
 
 
-class LayernormLSTM2(keras.layers.LSTM):
+class LayernormLSTM3(keras.layers.LSTM):
     def __init__(
             self,
             units,
@@ -199,7 +267,7 @@ class LayernormLSTM2(keras.layers.LSTM):
             unroll=False,
             **kwargs):
         # instantiate the RNN cell
-        cell = LayernormLSTM2Cell(
+        cell = LayernormLSTM3Cell(
             units,
             activation=activation,
             recurrent_activation=recurrent_activation,

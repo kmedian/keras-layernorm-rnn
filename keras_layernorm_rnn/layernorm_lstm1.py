@@ -2,12 +2,12 @@ import tensorflow as tf
 import tensorflow.keras as keras
 
 
-class LayernormLSTM2Cell(keras.layers.LSTMCell):
-    """LSTM with Layer Normalization (2: fewer large multiplications)
+class LayernormLSTM1Cell(keras.layers.LSTMCell):
+    """LSTM with Layer Normalization (1: more smaller multiplications)
 
     Notice:
-        LayernormLSTM2Cell(use_layernorm=False) is the same
-        as LSTMCell(implementation=2)
+        LayernormLSTM1Cell(use_layernorm=False) is the same
+        as LSTMCell(implementation=1)
 
     References:
     [1] Hochreiter, S., Schmidhuber, J., 1997. Long short-term memory.
@@ -101,26 +101,51 @@ class LayernormLSTM2Cell(keras.layers.LSTMCell):
         h_tm1 = states[0]  # previous memory state
         c_tm1 = states[1]  # previous carry state
         
-        # IMPLEMENTATION 2
-        # - One big operations instead of 4 smaller operations
-        # - no droput for recurrent kernel
+        # IMPLEMENTATION 1
+        # - Fewer small operations instead of few big operations
 
         # dropout, input kernel
-        if training:
-            if 0. < self.dropout < 1.:
-                # generate dropout mask from DropoutRNNCellMixin
-                dp_mask = self.get_dropout_mask_for_cell(
-                    inputs, training)
-                # apply dropout
-                inputs = inputs * dp_mask
+        if (training is not None) and (0. < self.dropout < 1.):
+            # generate 4x dropout masks from DropoutRNNCellMixin
+            dp_mask = self.get_dropout_mask_for_cell(
+                inputs, training, count=4)
+            # apply dropouts
+            inputs_i = inputs * dp_mask[0]
+            inputs_f = inputs * dp_mask[1]
+            inputs_c = inputs * dp_mask[2]
+            inputs_o = inputs * dp_mask[3]
+        else:
+            inputs_i, inputs_f, inputs_c, inputs_o = (
+                inputs, inputs, inputs, inputs)
         
-        # compute all network connections
-        net = keras.backend.dot(inputs, self.kernel)
-        net += keras.backend.dot(h_tm1, self.recurrent_kernel)
+        # multiply inputs with weight matrix 
+        W_i, W_f, W_c, W_o = tf.split(
+            self.kernel, num_or_size_splits=4, axis=1)
+        net_i = keras.backend.dot(inputs_i, W_i)
+        net_f = keras.backend.dot(inputs_f, W_f)
+        net_c = keras.backend.dot(inputs_c, W_c)
+        net_o = keras.backend.dot(inputs_o, W_o)
 
-        # split net into the 4 vectors
-        net_i, net_f, net_c, net_o = tf.split(
-            net, num_or_size_splits=4, axis=1)
+        # dropout, recurrent kernel
+        if (training is not None) and (0. < self.recurrent_dropout < 1.):
+            # generate 4x dropout masks from DropoutRNNCellMixin
+            rec_dp_mask = self.get_recurrent_dropout_mask_for_cell(
+                h_tm1, training, count=4)
+            # apply dropouts
+            h_tm1_i = h_tm1 * rec_dp_mask[0]
+            h_tm1_f = h_tm1 * rec_dp_mask[1]
+            h_tm1_c = h_tm1 * rec_dp_mask[2]
+            h_tm1_o = h_tm1 * rec_dp_mask[3]
+        else:
+            h_tm1_i, h_tm1_f, h_tm1_c, h_tm1_o = h_tm1, h_tm1, h_tm1, h_tm1
+
+        # multiply previous hidden with recurrent weights
+        R_i, R_f, R_c, R_o = tf.split(
+            self.recurrent_kernel, num_or_size_splits=4, axis=1)
+        net_i += keras.backend.dot(h_tm1_i, R_i)
+        net_f += keras.backend.dot(h_tm1_f, R_f)
+        net_c += keras.backend.dot(h_tm1_c, R_c)
+        net_o += keras.backend.dot(h_tm1_o, R_o)
 
         # apply scaling of layer normalization to each gate
         if self.use_layernorm:
@@ -167,7 +192,7 @@ class LayernormLSTM2Cell(keras.layers.LSTMCell):
 
 
 
-class LayernormLSTM2(keras.layers.LSTM):
+class LayernormLSTM1(keras.layers.LSTM):
     def __init__(
             self,
             units,
@@ -199,7 +224,7 @@ class LayernormLSTM2(keras.layers.LSTM):
             unroll=False,
             **kwargs):
         # instantiate the RNN cell
-        cell = LayernormLSTM2Cell(
+        cell = LayernormLSTM1Cell(
             units,
             activation=activation,
             recurrent_activation=recurrent_activation,
