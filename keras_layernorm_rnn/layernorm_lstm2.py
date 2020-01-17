@@ -106,7 +106,7 @@ class LayernormLSTM2Cell(keras.layers.LSTMCell):
         # - no droput for recurrent kernel
 
         # dropout, input kernel
-        if training:
+        if (training is not None):
             if 0. < self.dropout < 1.:
                 # generate dropout mask from DropoutRNNCellMixin
                 dp_mask = self.get_dropout_mask_for_cell(
