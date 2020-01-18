@@ -23,21 +23,22 @@ class LayernormLSTM3Cell(keras.layers.LSTMCell):
             activation='tanh',
             recurrent_activation='hard_sigmoid',
             use_bias=True,
-            use_layernorm=True,  # NEW(!)
-            layernorm_epsilon=1e-05,  # NEW(!)
+            use_layernorm=True,
+            use_gamma=True,
+            layernorm_epsilon=1e-05,
             kernel_initializer='glorot_uniform',
             recurrent_initializer='orthogonal',
             bias_initializer='zeros',
-            gamma_initializer='ones',  # NEW(!)
+            gamma_initializer='ones',
             unit_forget_bias=True,
             kernel_regularizer=None,
             recurrent_regularizer=None,
             bias_regularizer=None,
-            gamma_regularizer=None,  # NEW(!)
+            gamma_regularizer=None,
             kernel_constraint=None,
             recurrent_constraint=None,
             bias_constraint=None,
-            gamma_constraint=None,  # NEW(!)
+            gamma_constraint=None,
             dropout=0.,
             recurrent_dropout=0.,
             **kwargs):
@@ -65,6 +66,7 @@ class LayernormLSTM3Cell(keras.layers.LSTMCell):
             trainable=kwargs.get('trainable', True))
         # store layernorm attributes
         self.use_layernorm = use_layernorm
+        self.use_gamma = use_gamma
         self.layernorm_epsilon = layernorm_epsilon
         self.gamma_initializer = keras.initializers.get(gamma_initializer)
         self.gamma_regularizer = keras.regularizers.get(gamma_regularizer)
@@ -133,7 +135,7 @@ class LayernormLSTM3Cell(keras.layers.LSTMCell):
                 'axis': -1,
                 'epsilon': self.layernorm_epsilon,
                 'center': False,
-                'scale': True,
+                'scale': self.use_gamma,
                 'beta_initializer': None,
                 'gamma_initializer': self.gamma_initializer,
                 'beta_regularizer': None,
@@ -224,6 +226,7 @@ class LayernormLSTM3Cell(keras.layers.LSTMCell):
     def get_config(self):
         config = {
             'use_layernorm': self.use_layernorm,
+            'use_gamma': self.use_gamma,
             'layernorm_epsilon': self.layernorm_epsilon,
             'gamma_initializer': self.gamma_initializer,
             'gamma_regularizer': self.gamma_regularizer,
@@ -243,22 +246,23 @@ class LayernormLSTM3(keras.layers.LSTM):
             activation='tanh',
             recurrent_activation='hard_sigmoid',
             use_bias=True,
-            use_layernorm=True,  # NEW(!)
-            layernorm_epsilon=1e-05,  # NEW(!)
+            use_layernorm=True,
+            use_gamma=True,
+            layernorm_epsilon=1e-05,
             kernel_initializer='glorot_uniform',
             recurrent_initializer='orthogonal',
             bias_initializer='zeros',
-            gamma_initializer='ones',  # NEW(!)
+            gamma_initializer='ones',
             unit_forget_bias=True,
             kernel_regularizer=None,
             recurrent_regularizer=None,
             bias_regularizer=None,
-            gamma_regularizer=None,  # NEW(!)
+            gamma_regularizer=None,
             activity_regularizer=None,
             kernel_constraint=None,
             recurrent_constraint=None,
             bias_constraint=None,
-            gamma_constraint=None,  # NEW(!)
+            gamma_constraint=None,
             dropout=0.,
             recurrent_dropout=0.,
             return_sequences=False,
@@ -273,22 +277,23 @@ class LayernormLSTM3(keras.layers.LSTM):
             activation=activation,
             recurrent_activation=recurrent_activation,
             use_bias=use_bias,
-            use_layernorm=use_layernorm,  # NEW(!)
-            layernorm_epsilon=layernorm_epsilon,  # NEW(!)
+            use_layernorm=use_layernorm,
+            use_gamma=use_gamma,
+            layernorm_epsilon=layernorm_epsilon,
             kernel_initializer=kernel_initializer,
             recurrent_initializer=recurrent_initializer,
             bias_initializer=bias_initializer,
-            gamma_initializer=gamma_initializer,  # NEW(!)
+            gamma_initializer=gamma_initializer,
             unit_forget_bias=unit_forget_bias,
             kernel_regularizer=kernel_regularizer,
             recurrent_regularizer=recurrent_regularizer,
             bias_regularizer=bias_regularizer,
-            gamma_regularizer=gamma_regularizer,  # NEW(!)
+            gamma_regularizer=gamma_regularizer,
             activity_regularizer=activity_regularizer,
             kernel_constraint=kernel_constraint,
             recurrent_constraint=recurrent_constraint,
             bias_constraint=bias_constraint,
-            gamma_constraint=gamma_constraint,  # NEW(!)
+            gamma_constraint=gamma_constraint,
             dropout=dropout,
             recurrent_dropout=recurrent_dropout,
             dtype=kwargs.get('dtype'),
@@ -315,6 +320,10 @@ class LayernormLSTM3(keras.layers.LSTM):
     @property
     def use_layernorm(self):
         return self.cell.use_layernorm
+
+    @property
+    def use_gamma(self):
+        return self.cell.use_gamma
 
     @property
     def layernorm_epsilon(self):

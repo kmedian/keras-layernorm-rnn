@@ -26,6 +26,8 @@ class LayernormSimpleRNNCell(keras.layers.SimpleRNNCell,
         vector.
       use_layernorm: Boolean, (default `True`), whether to apply layer
         normalization (scaling only).
+      use_gamma: Boolean (default: True), whether to use gamma weights in
+        layer normalization.
       layernorm_epsilon: Float, (default `1e-5`), Small float added to variance
         to avoid dividing by zero.
       kernel_initializer: Initializer for the `kernel` weights matrix,
@@ -101,20 +103,21 @@ class LayernormSimpleRNNCell(keras.layers.SimpleRNNCell,
             units,
             activation='tanh',
             use_bias=True,
-            use_layernorm=True,  # NEW(!)
-            layernorm_epsilon=1e-05,  # NEW(!)
+            use_layernorm=True,
+            use_gamma=True,
+            layernorm_epsilon=1e-05,
             kernel_initializer='glorot_uniform',
             recurrent_initializer='orthogonal',
             bias_initializer='zeros',
-            gamma_initializer='ones',  # NEW(!)
+            gamma_initializer='ones',
             kernel_regularizer=None,
             recurrent_regularizer=None,
             bias_regularizer=None,
-            gamma_regularizer=None,  # NEW(!)
+            gamma_regularizer=None,
             kernel_constraint=None,
             recurrent_constraint=None,
             bias_constraint=None,
-            gamma_constraint=None,  # NEW(!)
+            gamma_constraint=None,
             dropout=0.,
             recurrent_dropout=0.,
             **kwargs):
@@ -142,7 +145,7 @@ class LayernormSimpleRNNCell(keras.layers.SimpleRNNCell,
                 axis=-1,
                 epsilon=layernorm_epsilon,
                 center=False,
-                scale=True,
+                scale=use_gamma,
                 beta_initializer=None,
                 gamma_initializer=gamma_initializer,
                 beta_regularizer=None,
@@ -242,10 +245,11 @@ class LayernormSimpleRNNCell(keras.layers.SimpleRNNCell,
         config = {'use_layernorm': self.use_layernorm}
         cell_config = keras.layers.SimpleRNNCell.get_config(self)
         del cell_config['name']
-        for key in ('axis', 'center', 'scale', 'beta_constraint',
+        for key in ('axis', 'center', 'beta_constraint',
                     'beta_initializer', 'beta_regularizer'):
             del cell_config[key]
         cell_config['layernorm_epsilon'] = cell_config.pop("epsilon")
+        cell_config['use_gamma'] = cell_config.pop("scale")
         return {**config, **cell_config}
 
 
@@ -272,6 +276,8 @@ class LayernormSimpleRNN(keras.layers.SimpleRNN):
         vector.
       use_layernorm: Boolean, (default `True`), whether to apply layer
         normalization (scaling only).
+      use_gamma: Boolean (default: True), whether to use gamma weights in
+        layer normalization.
       layernorm_epsilon: Float, (default `1e-5`), Small float added to variance
         to avoid dividing by zero.
       kernel_initializer: Initializer for the `kernel` weights matrix,
@@ -366,21 +372,22 @@ class LayernormSimpleRNN(keras.layers.SimpleRNN):
             units,
             activation='tanh',
             use_bias=True,
-            use_layernorm=True,  # NEW(!)
-            layernorm_epsilon=1e-05,  # NEW(!)
+            use_layernorm=True,
+            use_gamma=True,
+            layernorm_epsilon=1e-05,
             kernel_initializer='glorot_uniform',
             recurrent_initializer='orthogonal',
             bias_initializer='zeros',
-            gamma_initializer='ones',  # NEW(!)
+            gamma_initializer='ones',
             kernel_regularizer=None,
             recurrent_regularizer=None,
             bias_regularizer=None,
-            gamma_regularizer=None,  # NEW(!)
+            gamma_regularizer=None,
             activity_regularizer=None,
             kernel_constraint=None,
             recurrent_constraint=None,
             bias_constraint=None,
-            gamma_constraint=None,  # NEW(!)
+            gamma_constraint=None,
             dropout=0.,
             recurrent_dropout=0.,
             return_sequences=False,
@@ -394,21 +401,22 @@ class LayernormSimpleRNN(keras.layers.SimpleRNN):
             units,
             activation=activation,
             use_bias=use_bias,
-            use_layernorm=use_layernorm,  # NEW(!)
-            layernorm_epsilon=layernorm_epsilon,  # NEW(!)
+            use_layernorm=use_layernorm,
+            use_gamma=use_gamma,
+            layernorm_epsilon=layernorm_epsilon,
             kernel_initializer=kernel_initializer,
             recurrent_initializer=recurrent_initializer,
             bias_initializer=bias_initializer,
-            gamma_initializer=gamma_initializer,  # NEW(!)
+            gamma_initializer=gamma_initializer,
             kernel_regularizer=kernel_regularizer,
             recurrent_regularizer=recurrent_regularizer,
             bias_regularizer=bias_regularizer,
-            gamma_regularizer=gamma_regularizer,  # NEW(!)
+            gamma_regularizer=gamma_regularizer,
             activity_regularizer=activity_regularizer,
             kernel_constraint=kernel_constraint,
             recurrent_constraint=recurrent_constraint,
             bias_constraint=bias_constraint,
-            gamma_constraint=gamma_constraint,  # NEW(!)
+            gamma_constraint=gamma_constraint,
             dropout=dropout,
             recurrent_dropout=recurrent_dropout,
             dtype=kwargs.get('dtype'),
@@ -433,6 +441,10 @@ class LayernormSimpleRNN(keras.layers.SimpleRNN):
     @property
     def use_layernorm(self):
         return self.cell.use_layernorm
+
+    @property
+    def use_gamma(self):
+        return self.cell.use_gamma
 
     @property
     def layernorm_epsilon(self):
