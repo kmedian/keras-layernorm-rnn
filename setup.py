@@ -18,7 +18,7 @@ setup(name='keras-layernorm-rnn',
       packages=['keras_layernorm_rnn'],
       install_requires=[
           'setuptools>=40.0.0',
-          'tensorflow==2.1.0',
+          'tensorflow==2.11.1',
           'numpy>=1.18.0'],
       python_requires='>=3.6',
       zip_safe=False)
